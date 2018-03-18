@@ -71,7 +71,8 @@ public:
 };
 class HasCredit : public ChocoState
 {
-	HasCredit(StateContext* Context):ChocoState(Context){}
+public:
+	HasCredit(StateContext* Context) : ChocoState(Context) {}
 	bool insertMoney(int credit);
 	bool makeSelection(int option);
 	bool moneyRejected(void);
@@ -193,6 +194,15 @@ bool DispensesChocolate::dispense(void)
 }
 int main(void)
 {
-	
+	Chocolate_Dispenser MyDispenser;
+
+	MyDispenser.addChocolate(10);
+	MyDispenser.makeSelection(2); //should produce error
+	MyDispenser.insertMoney(10);
+	MyDispenser.makeSelection(20);//should produce error
+	MyDispenser.makeSelection(10);
+	MyDispenser.insertMoney(10);//should produce error
+	MyDispenser.dispense();
+
 	return 0;
 }
