@@ -7,7 +7,7 @@ using namespace std;
 
 class StateContext;
 
-enum state {Out_Of_Chocolate, No_Credit, Has_Credit, Dispenses_Chocolate};
+enum state {Out_Of_Chocolate, No_Credit, Has_Credit, Dispenses_Chocolate, Maintinence_Mode};
 ///////////// 
 class State
 {
@@ -27,7 +27,7 @@ protected:
 public:
 	virtual ~StateContext(void);
 	virtual void setState(state newState);
-	virtual int getStateIndex(void);
+	virtual int getStateIndex(void); //finds out the current state 
 };
 StateContext::~StateContext(void)
 {
@@ -42,7 +42,6 @@ int StateContext::getStateIndex(void)
 {
 	return this->stateIndex;
 }
-////////////
 class Transition
 {
 public:
@@ -51,7 +50,9 @@ public:
 	virtual bool moneyRejected(void) { cout << "Error!" << endl; return false; }
 	virtual bool addChocolate(int) { cout << "Error!" << endl; return false; }
 	virtual bool dispense(void) { cout << "Error!" << endl; return false; }
+	virtual bool enterPin(int) { cout << "Error!" << endl; return false; }
 };
+////////////
 class ChocoState : public State, public Transition
 {
 public:
@@ -60,14 +61,14 @@ public:
 class OutOfChocolate : public ChocoState
 {
 public:
-	OutOfChocolate(StateContext* Context) : ChocoState(Context) {}
-	bool addChocolate(int number);
+	bool enterPin(int pin);
 };
 class NoCredit : public ChocoState
 {
 public:
 	NoCredit(StateContext* Context) :ChocoState(Context) {}
 	bool insertMoney(int credit);
+	bool enterPin(int pin); 
 };
 class HasCredit : public ChocoState
 {
@@ -83,12 +84,21 @@ public:
 	DispensesChocolate(StateContext* Context) :ChocoState(Context) {}
 	bool dispense(void);
 };
+class MaintenanceMode : public ChocoState
+{
+public:
+	MaintenanceMode(StateContext* Context) : ChocoState(Context)	{}
+	bool addChocolate(int number);
+	bool exit(void);
+};
+
 class Chocolate_Dispenser : public StateContext, public Transition
 {
 	friend class OutOfChocolate;
 	friend class NoCredit;
 	friend class HasCredit;
 	friend class DispensesChocolate;
+	friend class MaintenanceMode;
 private:
 	int inventory = 0; // number of chocolate
 	int credit = 0; // a measure of the number of bars that can be mpurchased and not money 
@@ -99,6 +109,7 @@ public:
 	bool moneyRejected(void);
 	bool addChocolate(int number);
 	bool dispense(void);
+	bool enterPin(int pin);
 };
 Chocolate_Dispenser::Chocolate_Dispenser(void)
 {
@@ -106,6 +117,7 @@ Chocolate_Dispenser::Chocolate_Dispenser(void)
 	this->availableStates.push_back(new NoCredit(this));
 	this->availableStates.push_back(new HasCredit(this));
 	this->availableStates.push_back(new DispensesChocolate(this));
+	this->availableStates.push_back(new MaintenanceMode(this));
 
 	this->setState(Out_Of_Chocolate);
 }
@@ -129,14 +141,11 @@ bool Chocolate_Dispenser::dispense(void)
 {
 	return ((ChocoState*)CurrentState)->dispense();
 }
-
-bool OutOfChocolate::addChocolate(int number)
+bool Chocolate_Dispenser::enterPin(int pin)
 {
-	((Chocolate_Dispenser*)CurrentContext)->inventory += number;
-	cout << "Adding chocolate... Inventory = " << ((Chocolate_Dispenser*)CurrentContext)->inventory << endl;
-	CurrentContext->setState(No_Credit);
-	return true;
+	return ((ChocoState*)CurrentState)->enterPin(pin);
 }
+
 bool NoCredit::insertMoney(int credit)
 {
 	((Chocolate_Dispenser*)CurrentContext)->credit += credit;
@@ -181,6 +190,31 @@ bool HasCredit::moneyRejected(void)
 	CurrentContext->setState(No_Credit);
 	return true;
 }
+bool MaintenanceMode::addChocolate(int number)
+{
+	((Chocolate_Dispenser*)CurrentContext)->inventory += number;
+	cout << "Adding chocolate... Inventory = " << ((Chocolate_Dispenser*)CurrentContext)->inventory << endl;
+	return true;
+}
+bool MaintenanceMode::exit()
+{
+
+	if (((Chocolate_Dispenser*)CurrentContext)->inventory > 0 && ((Chocolate_Dispenser*)CurrentContext)->credit == 0)
+	{
+		CurrentContext->setState(Has_Credit);
+		return true;
+	}
+	else if (((Chocolate_Dispenser*)CurrentContext)->inventory > 0 && ((Chocolate_Dispenser*)CurrentContext)->credit == 0)
+	{
+		CurrentContext->setState(No_Credit);
+		return true;
+	}
+	else
+	{
+		CurrentContext->setState(Out_Of_Chocolate);
+		return true;
+	}
+}
 bool DispensesChocolate::dispense(void)
 {
 	cout << "Dispensing..." << endl;
@@ -192,6 +226,11 @@ bool DispensesChocolate::dispense(void)
 	else CurrentContext->setState(Has_Credit);
 	return true;
 }
+bool OutOfChocolate::enterPin(int pin)
+{
+
+}
+
 int main(void)
 {
 	Chocolate_Dispenser MyDispenser;
