@@ -7,23 +7,23 @@ using namespace std;
 
 class StateContext;
 
-enum state {Out_Of_Chocolate, No_Credit, Has_Credit, Dispenses_Chocolate, Maintinence_Mode};
-/////////////  Generic 
-class State
-{
-protected:
-	StateContext* CurrentContext;
+enum state { Out_Of_Chocolate, No_Credit, Has_Credit, Dispenses_Chocolate, Maintinence_Mode };
+/////////////  Generic ??????????????????????????????????????????????????????
+class State //This is the super class State. This stores a pointer to the current context and a has a public mehtod that takes a StateContext and changes
+{ //it to be the current state. all of the different StateContexts are stored on the heap, by having the CurrentContext pointer pointing to whatever state the FSM is in 
+protected: //it allows the program to be able to execute the code in that context when needed
+	StateContext* CurrentContext; //This is the current contextpointer it points to the code that represents the current state of the FSM ????????????????????????????????????????
 public:
 	State(StateContext* Context) { CurrentContext = Context; }
 	virtual ~State(void) {}
 };
 
-class StateContext
+class StateContext //This is the generic state context class. 
 {
 protected:
-	State* CurrentState = nullptr;
+	State* CurrentState = nullptr; //Each StateContext has a pointer of type state called CurrentState to be able to keep track of the current state.
 	int stateIndex = 0;
-	vector<State*> availableStates;
+	vector<State*> availableStates; //This vector stores the pointers to all of the available states so that the state can be changed. 
 public:
 	virtual ~StateContext(void);
 	virtual void setState(state newState);
@@ -42,12 +42,12 @@ int StateContext::getStateIndex(void)
 {
 	return this->stateIndex;
 }
-class Transition
+class Transition //This class stores all of the possible transitions. This is so that if something happens in a state which it doesn't have a bespoke response for it will print the generic response Error!
 	//////////////////////// Generic ^
 {
 public:
-	virtual bool insertMoney(int) { cout << "Error!" << endl; return false; }
-	virtual bool makeSelection(int) { cout << "Error!" << endl; return false; }
+	virtual bool insertMoney(int) { cout << "Error!" << endl; return false; } //The methods here are virtual. This allows for rutime polymorphism whereby the compiler can decide at runtime whether to call the 
+	virtual bool makeSelection(int) { cout << "Error!" << endl; return false; }//base class version or the overidden version declared in the class which inherits from transition.
 	virtual bool moneyRejected(void) { cout << "Error!" << endl; return false; }
 	virtual bool addChocolate(int) { cout << "Error!" << endl; return false; }
 	virtual bool dispense(void) { cout << "Error!" << endl; return false; }
@@ -55,17 +55,17 @@ public:
 	virtual bool exit(void) { cout << "Error!" << endl; return false; }
 };
 ////
-class ChocoState : public State, public Transition
+class ChocoState : public State, public Transition //The choco state class inherits from State and Transition. This means it is a state and also has all of the transition methods.
 {
 public:
 	ChocoState(StateContext* Context) : State(Context) {}
 };
-//Classes for each pontential state with each transition from that state being a method. 
-class OutOfChocolate : public ChocoState
-{
-public:
+//Classes for each pontential state 
+class OutOfChocolate : public ChocoState //Each state inherits from the superclass ChocoState. this means that each state then can overwrite any of the virtual mehtods it inherits this is polymorphism
+{ //so that it can create a bespoke response for each action it needs to deal with. but still have a generic response if an action occurs which isn't handled by the FSM eg. entering the pin when the FSM 
+public: //is in has credit state. 
 	OutOfChocolate(StateContext* Context) :ChocoState(Context) {}
-	bool enterPin(int pin);
+	bool enterPin(int pin); //Each possible transition from a state is a method. 
 	bool moneyRejected(void);
 };
 class NoCredit : public ChocoState
@@ -73,7 +73,7 @@ class NoCredit : public ChocoState
 public:
 	NoCredit(StateContext* Context) :ChocoState(Context) {}
 	bool insertMoney(int credit);
-	bool enterPin(int pin); 
+	bool enterPin(int pin);
 };
 class HasCredit : public ChocoState
 {
@@ -85,14 +85,14 @@ public:
 };
 class DispensesChocolate : public ChocoState
 {
-public: 
+public:
 	DispensesChocolate(StateContext* Context) :ChocoState(Context) {}
 	bool dispense(void);
 };
 class MaintenanceMode : public ChocoState
 {
 public:
-	MaintenanceMode(StateContext* Context) : ChocoState(Context)	{}
+	MaintenanceMode(StateContext* Context) : ChocoState(Context) {}
 	bool addChocolate(int number);
 	bool exit(void);
 };
@@ -119,8 +119,8 @@ public:
 	bool exit(void);
 
 };
-Chocolate_Dispenser::Chocolate_Dispenser(void)
-{
+Chocolate_Dispenser::Chocolate_Dispenser(void) //This is the constructor for the Chocolate_Dispenser class. This runs when a chocolate dispenser object is created.
+{ //This constructor pushes all of the pointers to the possible states into the availableStates vector and then sets the current state to be out of chocolate as this is the base state.
 	this->availableStates.push_back(new OutOfChocolate(this));
 	this->availableStates.push_back(new NoCredit(this));
 	this->availableStates.push_back(new HasCredit(this));
@@ -186,7 +186,7 @@ bool HasCredit::makeSelection(int option)
 	}
 
 	cout << "Credit and inventory is sufficient for your selection" << endl;
-	
+
 	((Chocolate_Dispenser*)CurrentContext)->inventory -= option; //deduct inventory 
 	((Chocolate_Dispenser*)CurrentContext)->credit -= option; //deduct credit
 
@@ -250,7 +250,7 @@ bool OutOfChocolate::enterPin(int pin)
 	}
 	return true;
 }
-bool OutOfChocolate::moneyRejected(void) 
+bool OutOfChocolate::moneyRejected(void)
 {
 	cout << "Rejecting money...." << endl;
 	((Chocolate_Dispenser*)CurrentContext)->credit = 0;
@@ -274,12 +274,15 @@ int main(void)
 {
 	Chocolate_Dispenser MyDispenser;
 
+	MyDispenser.enterPin(54321);
+	MyDispenser.addChocolate(50);
+	MyDispenser.enterPin(54322);
 	MyDispenser.addChocolate(10);
-	MyDispenser.makeSelection(2); //should produce error
-	MyDispenser.insertMoney(10);
-	MyDispenser.makeSelection(20);//should produce error
+	MyDispenser.insertMoney(20);
+	MyDispenser.exit();
+	MyDispenser.insertMoney(20);
 	MyDispenser.makeSelection(10);
-	MyDispenser.insertMoney(10);//should produce error
+	MyDispenser.enterPin(54321);
 	MyDispenser.dispense();
 
 	return 0;
