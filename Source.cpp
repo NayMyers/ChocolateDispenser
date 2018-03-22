@@ -10,15 +10,15 @@ class StateContext;
 enum state { Out_Of_Chocolate, No_Credit, Has_Credit, Dispenses_Chocolate, Maintinence_Mode };
 /////////////  Generic 
 class State //This is the super class State. It is generic and contains what is common to all states. 
-{ 
-protected: 
+{
+protected:
 	StateContext* CurrentContext; //every state contains a pointer to the current context. 
 public:
 	State(StateContext* Context) { CurrentContext = Context; } //This is the constructor. The state that is passed in when the object is created is the context that the FSM will start in.
-	virtual ~State(void) {} 
+	virtual ~State(void) {}
 };
 
-class StateContext //This is the generic state context class. This class contains the generic information that is common to all StateContext classes for any finite state machine
+class StateContext //This is the generic state context class. This class contains the generic information that is common to all StateContext classes 
 { //In this example Chocolate_Dispenser is the state context class. 
 protected:
 	State* CurrentState = nullptr; //This pointer points to the current state 
@@ -33,7 +33,7 @@ StateContext::~StateContext(void)
 {
 	for (int count = 0; count < int(this->availableStates.size()); count++) delete this->availableStates[count]; // code that deletes all pointers to all of the prevoiusly saved states 
 }
-void StateContext::setState(state newState) 
+void StateContext::setState(state newState)
 {
 	this->CurrentState = availableStates[newState];
 	this->stateIndex = newState;
@@ -42,7 +42,7 @@ int StateContext::getStateIndex(void)
 {
 	return this->stateIndex;
 }
-class Transition //This class stores all of the possible transitions. This is so that if something happens in a state which it doesn't have a bespoke response for it will print the generic response Error!
+class Transition //This class stores all of the possible transitions. This is so that if something happens in a state which it doesn't have a bespoke response for it will print the generic response
 	//////////////////////// Generic ^
 {
 public:
@@ -109,7 +109,7 @@ private:
 	int credit = 0; // a measure of the number of bars that can be mpurchased and not money 
 	int pin = 54321;
 public:
-	Chocolate_Dispenser(void); 
+	Chocolate_Dispenser(void);
 	bool insertMoney(int credit); //These are the possible transitions. 
 	bool makeSelection(int option);
 	bool moneyRejected(void);
@@ -159,14 +159,14 @@ bool Chocolate_Dispenser::exit(void)
 }
 
 bool NoCredit::insertMoney(int credit) //Each of these methods is a possible interaction that can occour with the FSM these overwrite the the virtual functions declared in transition. 
-{
-	((Chocolate_Dispenser*)CurrentContext)->credit += credit;
-	cout << "Adding credit ... Credit = " << ((Chocolate_Dispenser*)CurrentContext)->credit << endl;
-	CurrentContext->setState(Has_Credit); 
+{ //The insertMoney method bespoke for NoCredit takes in an integer which will be the number of bars the person can buy
+	((Chocolate_Dispenser*)CurrentContext)->credit += credit; // The amount of credit is then increased by the amount passed into the method.
+	cout << "Adding credit ... Credit = " << ((Chocolate_Dispenser*)CurrentContext)->credit << endl; 
+	CurrentContext->setState(Has_Credit);
 	return true;
 }
-bool HasCredit::insertMoney(int credit)
-{
+bool HasCredit::insertMoney(int credit) //This is the bespoke method for inserting money when the FSM is in the HasCredit state. It takes in an integer called credit so it can 
+{ //update the credit variable and therefore update the overall context of the FSM
 	((Chocolate_Dispenser*)CurrentContext)->credit += credit;
 	cout << "Adding credit ... Credit = " << ((Chocolate_Dispenser*)CurrentContext)->credit << endl;
 	return true;
@@ -195,11 +195,11 @@ bool HasCredit::makeSelection(int option)
 	return true;
 
 }
-bool HasCredit::moneyRejected(void)
+bool HasCredit::moneyRejected(void) //This method sets the context to No_Credit 
 {
 	cout << "Rejecting money...." << endl;
 	((Chocolate_Dispenser*)CurrentContext)->credit = 0;
-	CurrentContext->setState(No_Credit);
+	CurrentContext->setState(No_Credit); //
 	return true;
 }
 bool MaintenanceMode::addChocolate(int number)
@@ -208,17 +208,16 @@ bool MaintenanceMode::addChocolate(int number)
 	cout << "Adding chocolate... Inventory = " << ((Chocolate_Dispenser*)CurrentContext)->inventory << endl;
 	return true;
 }
-bool MaintenanceMode::exit()
-{
-
+bool MaintenanceMode::exit() //This method is used to exit maintinence mode. It handles the logic of which state to move to based on the contextual information inventory and credit 
+{ 
 	if (((Chocolate_Dispenser*)CurrentContext)->inventory > 0 && ((Chocolate_Dispenser*)CurrentContext)->credit == 0)
 	{
-		CurrentContext->setState(Has_Credit);
+		CurrentContext->setState(No_Credit);
 		return true;
 	}
-	else if (((Chocolate_Dispenser*)CurrentContext)->inventory > 0 && ((Chocolate_Dispenser*)CurrentContext)->credit == 0)
+	else if (((Chocolate_Dispenser*)CurrentContext)->inventory > 0 && ((Chocolate_Dispenser*)CurrentContext)->credit > 0)
 	{
-		CurrentContext->setState(No_Credit);
+		CurrentContext->setState(Has_Credit);
 		return true;
 	}
 	else
@@ -246,7 +245,7 @@ bool OutOfChocolate::enterPin(int pin)
 	}
 	else
 	{
-		cout << "Incorrect pin: " << endl;
+		cout << "Incorrect pin " << endl;
 	}
 	return true;
 }
@@ -265,7 +264,7 @@ bool NoCredit::enterPin(int pin)
 	}
 	else
 	{
-		cout << "Incorrect pin: " << endl;
+		cout << "Incorrect pin " << endl;
 	}
 	return true;
 }
@@ -274,16 +273,25 @@ int main(void)
 {
 	Chocolate_Dispenser MyDispenser;
 
-	MyDispenser.enterPin(54321);
-	MyDispenser.addChocolate(50);
-	MyDispenser.enterPin(54322);
-	MyDispenser.addChocolate(10);
-	MyDispenser.insertMoney(20);
-	MyDispenser.exit();
-	MyDispenser.insertMoney(20);
+	MyDispenser.addChocolate(10); //Should produce error
+	MyDispenser.makeSelection(10); //Should produce error
+	MyDispenser.enterPin(54321); //Enters the maintinence mode 
+	MyDispenser.insertMoney(10); //Should produce error	
+	MyDispenser.addChocolate(50); //Should add 50 chocolate bars
+	MyDispenser.exit();//Should exit to no credit	
+	MyDispenser.enterPin(33);//Should say wrong pin
+	MyDispenser.insertMoney(60);
+	MyDispenser.makeSelection(60);//Should say there isn't enough chocolate
+	MyDispenser.dispense(); //Should produce an error
+	MyDispenser.makeSelection(30);
+	MyDispenser.dispense();//should dispense leaving 20 chocolate bars and 30 credit
+	MyDispenser.moneyRejected();// should leave credit at 0
+	MyDispenser.makeSelection(10); //Should produce error
+	MyDispenser.dispense(); //should produce error
+	MyDispenser.insertMoney(10);
 	MyDispenser.makeSelection(10);
-	MyDispenser.enterPin(54321);
 	MyDispenser.dispense();
+
 
 	return 0;
 }
