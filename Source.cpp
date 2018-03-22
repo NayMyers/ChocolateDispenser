@@ -19,7 +19,7 @@ public:
 };
 
 class StateContext //This is the generic state context class. This class contains the generic information that is common to all StateContext classes for any finite state machine
-{ //In this example Chocolate_Dispenser is the state context class.
+{ //In this example Chocolate_Dispenser is the state context class. 
 protected:
 	State* CurrentState = nullptr; //This pointer points to the current state 
 	int stateIndex = 0;
@@ -56,7 +56,7 @@ public:
 };
 ////
 class ChocoState : public State, public Transition //The choco state class inherits from State and Transition. This means it is a state and also has all of the transition methods. 
-{ //All other states will also inherit from this. 
+{ //All other states will also inherit from this. //This is because this class is the non generic state class.
 public:
 	ChocoState(StateContext* Context) : State(Context) {}
 };
