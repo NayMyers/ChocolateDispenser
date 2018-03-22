@@ -31,7 +31,7 @@ public:
 };
 StateContext::~StateContext(void)
 {
-	for (int count = 0; count < int(this->availableStates.size()); count++) delete this->availableStates[count]; // code that deletes all pointers to all of the prevoiusly saved states 
+	for (int i = 0; i < int(this->availableStates.size()); i++) delete this->availableStates[i]; // code that deletes all pointers to all of the prevoiusly saved states 
 }
 void StateContext::setState(state newState)
 {
