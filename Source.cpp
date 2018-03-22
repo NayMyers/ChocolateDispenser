@@ -72,8 +72,8 @@ class NoCredit : public ChocoState
 {
 public:
 	NoCredit(StateContext* Context) :ChocoState(Context) {}
-	bool insertMoney(int credit);
-	bool enterPin(int pin);
+	bool insertMoney(int credit); //Each method in each of the state classes is a possible transition. These methods
+	bool enterPin(int pin); //overwrite the methods inside transition
 };
 class HasCredit : public ChocoState
 {
@@ -129,6 +129,7 @@ Chocolate_Dispenser::Chocolate_Dispenser(void) //This is the constructor for the
 
 	this->setState(Out_Of_Chocolate);
 }
+//These methods ------------------  are used to pass information up to the higher classes 
 bool Chocolate_Dispenser::insertMoney(int credit)
 {
 	return ((ChocoState*)CurrentState)->insertMoney(credit);
@@ -157,7 +158,7 @@ bool Chocolate_Dispenser::exit(void)
 {
 	return ((ChocoState*)CurrentState)->exit();
 }
-
+//----------------
 bool NoCredit::insertMoney(int credit) //Each of these methods is a possible interaction that can occour with the FSM these overwrite the the virtual functions declared in transition. 
 { //The insertMoney method bespoke for NoCredit takes in an integer which will be the number of bars the person can buy
 	((Chocolate_Dispenser*)CurrentContext)->credit += credit; // The amount of credit is then increased by the amount passed into the method.
@@ -171,8 +172,8 @@ bool HasCredit::insertMoney(int credit) //This is the bespoke method for inserti
 	cout << "Adding credit ... Credit = " << ((Chocolate_Dispenser*)CurrentContext)->credit << endl;
 	return true;
 }
-bool HasCredit::makeSelection(int option)
-{
+bool HasCredit::makeSelection(int option) //This method handles the logic to decide if the amount of chocolate the user has selected is possible for them to dispense based on 
+{//the contextual information inventory and credit. 
 	//in this example option = number of bars but could be used to represent a menu choice 
 	if (((Chocolate_Dispenser*)CurrentContext)->inventory < option)
 	{
@@ -226,7 +227,7 @@ bool MaintenanceMode::exit() //This method is used to exit maintinence mode. It 
 		return true;
 	}
 }
-bool DispensesChocolate::dispense(void)
+bool DispensesChocolate::dispense(void) //This method displayes the current inventory and credit it then deducts 
 {
 	cout << "Dispensing..." << endl;
 	cout << "Inventory = " << ((Chocolate_Dispenser*)CurrentContext)->inventory << endl;
@@ -237,7 +238,7 @@ bool DispensesChocolate::dispense(void)
 	else CurrentContext->setState(Has_Credit);
 	return true;
 }
-bool OutOfChocolate::enterPin(int pin)
+bool OutOfChocolate::enterPin(int pin) //This method takes the pin as an argument of type integer and then if the pin matches the pin stored in the context it will change the state to MaintinenceMode 
 {
 	if (pin == ((Chocolate_Dispenser*)CurrentContext)->pin)
 	{
@@ -249,15 +250,15 @@ bool OutOfChocolate::enterPin(int pin)
 	}
 	return true;
 }
-bool OutOfChocolate::moneyRejected(void)
+bool OutOfChocolate::moneyRejected(void) //This method simply remains at the same state 
 {
 	cout << "Rejecting money...." << endl;
 	((Chocolate_Dispenser*)CurrentContext)->credit = 0;
 	CurrentContext->setState(Out_Of_Chocolate);
 	return true;
 }
-bool NoCredit::enterPin(int pin)
-{
+bool NoCredit::enterPin(int pin) //This method takes the pin as an argument of type integer and then if the pin matches the pin stored in the context it will change the state to MaintinenceMode 
+{ 
 	if (pin == ((Chocolate_Dispenser*)CurrentContext)->pin)
 	{
 		((Chocolate_Dispenser*)CurrentContext)->setState(Maintinence_Mode);
